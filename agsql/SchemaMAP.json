@@ -1,0 +1,12 @@
+{ 
+  "matched_tables": ["sales_data"],
+  "column_mappings": 
+  { 
+    "sales": "total_sales"
+  }, 
+  "join_suggestions": [],
+  "time_filter_column": "salesDate",
+  "unmapped_entities": [], 
+  "warnings": [], 
+  "clarifications": [] 
+}

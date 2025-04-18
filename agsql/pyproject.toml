@@ -1,0 +1,28 @@
+[project]
+name = "agsql"
+version = "0.1.0"
+description = "AGSQL using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "crewai[tools]>=0.114.0,<1.0.0",
+    "dateparser>=1.2.1",
+    "google-generativeai>=0.8.5",
+    "langchain>=0.3.23",
+    "langchain-google-genai>=2.0.10",
+    "sentence-transformers>=4.1.0",
+]
+
+[project.scripts]
+agsql = "agsql.main:run"
+run_crew = "agsql.main:run"
+train = "agsql.main:train"
+replay = "agsql.main:replay"
+test = "agsql.main:test"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "crew"

@@ -1,0 +1,124 @@
+ner_extraction_task:
+  description: >
+    Understand and semantically interpret the user's query: "{topic}".
+    Use advanced natural language understanding (NLU) to extract every required element needed to generate a valid, executable SQL query.
+
+    The query may be formal or conversational, shorthand or business-style (e.g., “rev today”, “top cust q2 vs q3”).
+    You must extract:
+    - Users true intent (e.g., retrieve, count, compare)
+    - All mentioned concepts, filters, and aggregations
+    - Ambiguities and potential misunderstandings
+    - User's original phrases (e.g., "rev", "cust", "today") — do NOT map to schema
+    - Every entity required for schema mapping and SQL generation
+
+    You are not allowed to hardcode or assume column names, table names, or SQL structure.
+
+  expected_output: >
+    A clean, structured JSON object containing:
+      - intent_type: (e.g., SELECT, UPDATE, DELETE)
+      - columns: list of raw column/entity terms
+      - aggregations: mapping of columns to aggregation functions if implied
+      - filters: list of logical comparisons, ranges, or value constraints
+      - time_expressions: any informal or formal time references (e.g., "today", "last year")
+      - group_by: fields the user implies should be grouped
+      - order_by: sorting logic if present (column + direction)
+      - limit: max number of rows requested
+      - offset: skip count for pagination
+      - distinct: true if query implies uniqueness
+      - joins_needed: true if multiple entities are referenced
+      - having_clauses: if user asks for filters on aggregates
+      - derived_metrics: e.g., conversion rate, avg basket size
+      - date_granularity: e.g., daily, monthly, yearly
+      - subquery_required: true if inner query logic is implied
+      - negation_filters: anything user wants to exclude (e.g., “not in q1”)
+      - unions: if set operations are implied
+      - clarifications: list of questions to confirm vague terms
+      - unresolved_terms: if any entity cannot be clearly identified
+
+    Do NOT hallucinate. If something is unclear, list it in `clarifications` or `unresolved_terms`.
+
+  agent: ner_agent
+
+
+schema_mapping_task:
+  description: >
+    Based on the NER output and provided schema string for the query "{topic}", return a JSON object containing:
+    - matched_tables: list of valid table names from the schema
+    - column_mappings: mapping of user-intended fields to schema-defined column names
+    - join_suggestions: join conditions based on foreign key relationships (if needed)
+    - time_filter_column: if a single valid time-related column is found
+    - unmapped_entities: list of user terms that do not appear in the schema
+    - warnings: list of any ambiguities or assumptions made
+    - clarifications: questions for the user in case of multiple matching candidates or unclear mappings
+
+    Do not guess or hallucinate column names.
+    Only return fields and relationships that exist in the schema string input.
+  expected_output: >
+    A structured JSON object with mapping results, join logic (if needed), and feedback or clarifications.
+  agent: schema_mapper_agent
+
+resolve_time_filter_task:
+  description: >
+    Resolve time expressions from the query "{topic}" using available tools and schema input.
+    Return:
+      - the matching time-related column from the schema
+      - resolved time value (start + end)
+      - fallback options or clarifications if ambiguous
+
+    Do not hardcode column names or date values. Use tools and today's date only.
+    Format output using the defined Guardrails spec.
+  agent: time_filter_agent
+
+resolve_time_filter_task:
+  description: >
+    Your input is the JSON output from the schema_mapper_agent.
+    This JSON contains matched_tables, column_mappings, join_suggestions, and more.
+
+    Your job is to:
+    1. Identify time expressions in the original user query (e.g., "today", "last 30 days", "Q2").
+    2. Resolve those time expressions into actual dates using the time parser tool.
+    3. Update ONLY the relevant parts of the schema_mapper_agent’s output:
+       - Inject the time expression into `column_mappings` using this format:
+         "<time_expression>": {
+           "column": "<schema_column>",
+           "resolved_date": "<YYYY-MM-DD>"
+         }
+       - Set the `time_filter_column` to the selected schema column
+       - Optionally add to `warnings` or `clarifications` if ambiguous
+    4. Do NOT alter any other part of the structure. Return the updated full JSON.
+
+  expected_output: >
+    A complete JSON object identical to the schema_mapper_agent output,
+    with only these updates:
+    - time expressions mapped in column_mappings as nested objects
+    - time_filter_column set
+    - any necessary warnings or clarifications added
+  agent: time_filter_agent
+
+normalize_columns_task:
+  description: >
+    Take a structured JSON object containing extracted query mappings and validate every column reference
+    using the provided schema knowledge base.
+
+    Your job is to:
+    - Ensure that every value in column_mappings refers to an actual column in the schema.
+    - Normalize each mapping to a fully-qualified name (table.column).
+    - Detect and correct casing mismatches, fuzzy phrasing, and aliases.
+    - Do not hardcode or infer values. Only return mappings that exist in the schema.
+
+    If a mapping is invalid or unclear:
+      - Move it to unmapped_entities
+      - Add a clarification entry to request user guidance
+
+    Return the updated full JSON structure with corrected column_mappings and normalized fields only.
+    Leave other keys (like matched_tables, time_filter_column, etc.) untouched.
+
+  expected_output: >
+    A dynamic JSON object with:
+      - column_mappings: dictionary of valid schema-aligned column references
+      - unmapped_entities: list of unresolved user terms
+      - clarifications: questions for the user when ambiguity arises
+      - warnings: optional notes on fallback logic, if used
+
+    Do not include any hardcoded values. Everything must be derived from schema knowledge dynamically.
+  agent: column_normalizer_agent

@@ -1,0 +1,19 @@
+{
+  "matched_tables": ["sales_data"],
+  "column_mappings": 
+  { 
+    "sales": "sales_data.total_sales",
+    "today": {
+       "column": "sales_data.sales_date",
+       "resolved_date": "2025-04-16"
+     }
+  }, 
+  "join_suggestions": [],
+  "time_filter_column": "sales_data.sales_date",
+  "unmapped_entities": [], 
+  "warnings": [], 
+  "clarifications": [{
+    "term": "today",
+    "question": "Does 'today' refer to the current date represented by 'sales_date' in the query?"
+  }] 
+}

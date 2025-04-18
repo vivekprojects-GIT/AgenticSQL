@@ -1,0 +1,22 @@
+{
+"intent_type": "SELECT",
+"columns": ["sales"],
+"aggregations": ["SUM"],
+"filters": [],
+"time_expressions": ["today"],
+"group_by": [],
+"order_by": [],
+"limit": null,
+"offset": null,
+"distinct": false,
+"joins_needed": [],
+"having_clauses": [],
+"derived_metrics": [],
+"date_granularity": "day",
+"subquery_required": false,
+"negation_filters": [],
+"unions": [],
+"clarifications": [],
+"unresolved_terms": [],
+"confidence_score": "high"
+}

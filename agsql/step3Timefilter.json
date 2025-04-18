@@ -1,0 +1,16 @@
+{
+  "matched_tables": ["sales_data"],
+  "column_mappings": 
+  { 
+    "sales": "total_sales",
+    "today": {
+       "column": "salesDate",
+       "resolved_date": "2025-04-16"
+     }
+  }, 
+  "join_suggestions": [],
+  "time_filter_column": "salesDate",
+  "unmapped_entities": [], 
+  "warnings": [], 
+  "clarifications": [] 
+}
