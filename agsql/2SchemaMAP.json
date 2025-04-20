@@ -1,0 +1,59 @@
+```json
+{
+  "intent": "SELECT",
+  "tables": ["sales_data", "marketing_campaigns"],
+  "columns": [
+    {
+      "term": "avg of total sales",
+      "matches": [
+        {"field": "total_sales", "table": "sales_data", "score": 0.9},
+        {"field": "total_sales", "table": "sales_data", "score": 0.8} // assuming 'kumar' is a column in sales_data
+      ]
+    },
+    {
+      "term": "kumar",
+      "matches": [
+        {"field": "id", "table": "marketing_campaigns", "score": 0.2}, // assuming 'kumar' is an id in marketing_campaigns
+        {"field": "campaign_type", "table": "marketing_campaigns", "score": 0.1} // assuming 'kumar' is a campaign type
+      ]
+    },
+    {
+      "term": "his arketing types",
+      "matches": [
+        {"field": "channel", "table": "marketing_campaigns", "score": 0.8},
+        {"field": "campaign_type", "table": "marketing_campaigns", "score": 0.7}
+      ]
+    }
+  ],
+  "filters": [],
+  "joins": [],
+  "aggregations": [
+    {
+      "term": "avg",
+      "matches": [
+        {"field": "total_sales", "table": "sales_data", "score": 1},
+        {"field": "id", "table": "marketing_campaigns", "score": 0.2} // assuming 'kumar' is an id in marketing_campaigns
+      ]
+    }
+  ],
+  "group_by": [],
+  "order_by": [],
+  "limit": null,
+  "offset": null,
+  "subqueries": [],
+  "set_operations": [],
+  "negations": [],
+  "distinct": false,
+  "derived_metrics": [],
+  "clarifications": [
+    {
+      "term": "kumar",
+      "reason": "multiple possible matches"
+    },
+    {
+      "term": "his arketing types",
+      "reason": "possible typo or ambiguity in 'arketing'"
+    }
+  ]
+}
+```

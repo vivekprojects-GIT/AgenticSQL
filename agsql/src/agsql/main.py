@@ -18,7 +18,21 @@ def run():
     Run the crew.
     """
     inputs = {
-        'topic': 'what are my total sales today',
+        'topic': ''' i want an avg of total sales of kumar and  his arketing types?
+            'Schema:
+            Table: sales_data
+            - id (INTEGER)
+            - campaign_id (INTEGER)
+            - total_sales (FLOAT)
+            - salesDate(DATE)
+            Foreign Keys:
+            - campaign_id → marketing_campaigns.id
+
+            Table: marketing_campaigns
+            - id (INTEGER)
+            - campaign_type (TEXT)
+            - channel (TEXT)'''
+        '',
         'current_year': str(datetime.now().year)
     }
     

@@ -1,0 +1,20 @@
+```json
+{
+  "intent": "SELECT",
+  "tables": ["Current Task"],
+  "columns": ["Interpret", "user's", "natural", "language", "query"],
+  "filters": [],
+  "joins": [],
+  "aggregations": [],
+  "group_by": [],
+  "order_by": [],
+  "limit": null,
+  "offset": null,
+  "subqueries": [],
+  "set_operations": [],
+  "negations": [],
+  "distinct": false,
+  "derived_metrics": [],
+  "clarifications": []
+}
+```

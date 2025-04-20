@@ -1,73 +1,59 @@
 ner_extraction_task:
   description: >
-    Understand and semantically interpret the user's query: "{topic}".
-    Use advanced natural language understanding (NLU) to extract every required element needed to generate a valid, executable SQL query.
-
-    The query may be formal or conversational, shorthand or business-style (e.g., “rev today”, “top cust q2 vs q3”).
-    You must extract:
-    - Users true intent (e.g., retrieve, count, compare)
-    - All mentioned concepts, filters, and aggregations
-    - Ambiguities and potential misunderstandings
-    - User's original phrases (e.g., "rev", "cust", "today") — do NOT map to schema
-    - Every entity required for schema mapping and SQL generation
-
-    You are not allowed to hardcode or assume column names, table names, or SQL structure.
+    Interpret the user's natural language query (NLQ) and extract only the SQL-relevant elements
+    that are explicitly and unambiguously mentioned. This includes all SQL intents such as SELECT,
+    INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, etc. If something is not clearly stated,
+    it must not be included.
 
   expected_output: >
-    A clean, structured JSON object containing:
-      - intent_type: (e.g., SELECT, UPDATE, DELETE)
-      - columns: list of raw column/entity terms
-      - aggregations: mapping of columns to aggregation functions if implied
-      - filters: list of logical comparisons, ranges, or value constraints
-      - time_expressions: any informal or formal time references (e.g., "today", "last year")
-      - group_by: fields the user implies should be grouped
-      - order_by: sorting logic if present (column + direction)
-      - limit: max number of rows requested
-      - offset: skip count for pagination
-      - distinct: true if query implies uniqueness
-      - joins_needed: true if multiple entities are referenced
-      - having_clauses: if user asks for filters on aggregates
-      - derived_metrics: e.g., conversion rate, avg basket size
-      - date_granularity: e.g., daily, monthly, yearly
-      - subquery_required: true if inner query logic is implied
-      - negation_filters: anything user wants to exclude (e.g., “not in q1”)
-      - unions: if set operations are implied
-      - clarifications: list of questions to confirm vague terms
-      - unresolved_terms: if any entity cannot be clearly identified
+    A structured JSON object that includes only the keys explicitly found in the user query.
+    Valid keys may include:
+    - intent
+    - tables
+    - columns
+    - filters
+    - joins
+    - aggregations
+    - group_by
+    - order_by
+    - limit
+    - offset
+    - subqueries
+    - set_operations
+    - negations
+    - distinct
+    - derived_metrics
+    - clarifications
 
-    Do NOT hallucinate. If something is unclear, list it in `clarifications` or `unresolved_terms`.
+    Do NOT include any of the above keys if they are not mentioned by the user.
+
+    You must never:
+    - Assume defaults (e.g., limit: 10, offset: 0)
+    - Include empty arrays or placeholder fields
+    - Suggest values not clearly stated
+
+    If the query does not contain any extractable SQL-relevant information, return an empty JSON object: `{}`
 
   agent: ner_agent
 
 
 schema_mapping_task:
   description: >
-    Based on the NER output and provided schema string for the query "{topic}", return a JSON object containing:
-    - matched_tables: list of valid table names from the schema
-    - column_mappings: mapping of user-intended fields to schema-defined column names
-    - join_suggestions: join conditions based on foreign key relationships (if needed)
-    - time_filter_column: if a single valid time-related column is found
-    - unmapped_entities: list of user terms that do not appear in the schema
-    - warnings: list of any ambiguities or assumptions made
-    - clarifications: questions for the user in case of multiple matching candidates or unclear mappings
+    Using the provided schema(s), map all extracted user terms (columns, tables, filters, metrics) to actual fields across one or more schemas.
 
-    Do not guess or hallucinate column names.
-    Only return fields and relationships that exist in the schema string input.
+    You must:
+    - Perform **exact case-sensitive matching** wherever possible.
+    - If no exact match is found, use **fuzzy semantic matching** and rank the top candidates based on similarity.
+    - For each user term, return a **list of possible schema fields** with a **confidence score between 0 and 1**.
+    - Clearly **flag any ambiguities** or **multiple high-scoring matches** that may require clarification.
+    - Never assume or invent fields not present in the schema.
+    - The schema is provided as part of your input knowledge and may include multiple tables.
+
   expected_output: >
-    A structured JSON object with mapping results, join logic (if needed), and feedback or clarifications.
+    A JSON object where each extracted term maps to:
+    - a ranked list of matching schema fields (with scores), or
+    - a clarification request if multiple matches have similar scores.
   agent: schema_mapper_agent
-
-resolve_time_filter_task:
-  description: >
-    Resolve time expressions from the query "{topic}" using available tools and schema input.
-    Return:
-      - the matching time-related column from the schema
-      - resolved time value (start + end)
-      - fallback options or clarifications if ambiguous
-
-    Do not hardcode column names or date values. Use tools and today's date only.
-    Format output using the defined Guardrails spec.
-  agent: time_filter_agent
 
 resolve_time_filter_task:
   description: >
@@ -122,3 +108,12 @@ normalize_columns_task:
 
     Do not include any hardcoded values. Everything must be derived from schema knowledge dynamically.
   agent: column_normalizer_agent
+
+
+generate_sql_task:
+  description: >
+    Using the output from the previous agents (NER, schema mapping, normalization, filters), generate a valid SQL query that answers the user's question: "{topic}".
+    Your query must account for joins, group by, time ranges, filters, and derived metrics when necessary.
+  expected_output: >
+    A single SQL query in code block format (```sql) followed by a brief explanation of its logic.
+  agent: sql_generator_agent

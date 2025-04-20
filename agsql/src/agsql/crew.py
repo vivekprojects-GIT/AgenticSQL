@@ -39,31 +39,31 @@ load_dotenv()
 # you can use the @before_kickoff and @after_kickoff decorators
 # https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
 # Create agent-specific knowledge about a product
-product_specs = StringKnowledgeSource(
-    embedding_function=None,
-    content="""
-Schema:
-Table: sales_data
-- id (INTEGER)
-- campaign_id (INTEGER)
-- total_sales (FLOAT)
-- salesDate(DATE)
-Foreign Keys:
-- campaign_id → marketing_campaigns.id
+# product_specs = StringKnowledgeSource(
+#     embedding_function=None,
+#     content="""
+# Schema:
+# Table: sales_data
+# - id (INTEGER)
+# - campaign_id (INTEGER)
+# - total_sales (FLOAT)
+# - salesDate(DATE)
+# Foreign Keys:
+# - campaign_id → marketing_campaigns.id
 
-Table: marketing_campaigns
-- id (INTEGER)
-- campaign_type (TEXT)
-- channel (TEXT)
-"""
-)
+# Table: marketing_campaigns
+# - id (INTEGER)
+# - campaign_type (TEXT)
+# - channel (TEXT)
+#"""
+# )
 
 
 @CrewBase
 class Agsql():
 
     ollama_llm = LLM(
-        model="ollama/deepseek-r1:1.5b",
+        model="ollama/llama3.1:8b",
         api_base="http://localhost:11434",
         provider="ollama",
         temperature=0,
@@ -94,7 +94,7 @@ class Agsql():
             config=self.agents_config['schema_mapper_agent'],
             verbose=True,
             llm=self.ollama_llm,
-            knowledge_sources=[product_specs]
+            #knowledge_sources=[product_specs]
         )
 
     @agent
@@ -116,6 +116,14 @@ class Agsql():
             llm=self.ollama_llm
         )
 
+    @agent
+    def sql_generator_agent(self) -> Agent:
+        return Agent(
+            config=self.agents_config['sql_generator_agent'],
+            tools=[],
+            verbose=True,
+            llm=self.ollama_llm
+        )
 
 
 
@@ -133,7 +141,7 @@ class Agsql():
     def ner_extraction_task(self) -> Task:
         return Task(
             config=self.tasks_config['ner_extraction_task'],
-            output_file='NER.json'
+            output_file='1NER.json'
         )
 
 
@@ -141,23 +149,29 @@ class Agsql():
     def schema_mapping_task(self) -> Task:
         return Task(
             config=self.tasks_config['schema_mapping_task'],
-            output_file='SchemaMAP.json'
+            output_file='2SchemaMAP.json'
         )
 
     @task
     def resolve_time_filter_task(self) -> Task:
         return Task(
             config=self.tasks_config['resolve_time_filter_task'],
-            output_file='step3Timefilter.json'
+            output_file='3stepTimefilter.json'
         )
 
     @task
     def normalize_columns_task(self) -> Task:
         return Task(
             config=self.tasks_config['normalize_columns_task'],
-            output_file='step4Timefilter.json'
+            output_file='4stepnormalize.json'
         )
 
+    @task
+    def generate_sql_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['generate_sql_task'],
+            output_file='5generate_sql.json'
+        )
 
     # @task
     # def reporting_task(self) -> Task:
